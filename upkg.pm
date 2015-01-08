@@ -217,7 +217,7 @@ sub getHeaders {
 
   # only get the GUID if the version >= 68
   if ($self->{headers}->{"Version"} >= 68) {
-    $self->{headers}->{"GUID"} = sprintf("%08x", $self->ReadLong()) . "-" . sprintf("%08x", $self->ReadLong()) . "-" . sprintf("%08x", $self->ReadLong()) . "-" . sprintf("%08x", $self->ReadLong());
+    $self->{headers}->{"GUID"} = sprintf("%08x", $self->ReadLongGUID()) . "-" . sprintf("%08x", $self->ReadLongGUID()) . "-" . sprintf("%08x", $self->ReadLongGUID()) . "-" . sprintf("%08x", $self->ReadLongGUID());
   }
 }
 
@@ -997,9 +997,20 @@ sub ReadLong {
   my $self = shift;
   my $string;
   my $char = read($self->{'fh'}, $string, 4);
-  my $long = unpack("L", $string);
+  my $long = unpack("l", $string);
   
   $self->{'debuglog'} .= "<- Read dword at " . (tell($self->{'fh'})-4) . ": " . $long . "\n";
+  
+  return $long;
+}
+
+sub ReadLongGUID {
+  my $self = shift;
+  my $string;
+  my $char = read($self->{'fh'}, $string, 4);
+  my $long = unpack("L", $string);
+  
+  $self->{'debuglog'} .= "<- Read GUID dword at " . (tell($self->{'fh'})-4) . ": " . $long . "\n";
   
   return $long;
 }
