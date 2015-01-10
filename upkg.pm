@@ -4,7 +4,7 @@ use strict;
 use warnings;
 use vars qw($VERSION);
 
-$VERSION = 0.1;
+$VERSION = 0.2;
 
 sub new {
   my $class = shift;
@@ -76,6 +76,27 @@ sub debugLog {
   $log .= $self->{'debuglog'};
   
   return $log;
+}
+
+sub getBrush {
+  my $self = shift;
+  my $id = shift;
+  
+  my %object = $self->getObject($id);
+  
+  my $id_model = $object{'Brush'}->{'value'} - 1;
+  my $id_polys = $self->getModel($id_model) - 1;
+  
+   if ((!defined($id_polys)) or ($self->{'exports'}->[$id_polys]->{'_Class'} ne "Polys")) {
+    warn "Export $id (" . $_->{'_Name'} . ") doesn't connect to polys ($id_model --> " . (defined($id_polys) ?$id_polys : "undef") . ")\n";
+    return;
+  }
+  
+  
+  my @polys = $self->getPolys($id_polys);
+  $object{'raw'} = \@polys;
+  
+  return %object;
 }
 
 sub getDependencies {
@@ -216,8 +237,10 @@ sub getHeaders {
   $self->{headers}->{"ImportOffset"} = $self->ReadLong();
 
   # only get the GUID if the version >= 68
+  
+  # 
   if ($self->{headers}->{"Version"} >= 68) {
-    $self->{headers}->{"GUID"} = sprintf("%08x", $self->ReadLongGUID()) . "-" . sprintf("%08x", $self->ReadLongGUID()) . "-" . sprintf("%08x", $self->ReadLongGUID()) . "-" . sprintf("%08x", $self->ReadLongGUID());
+    $self->{headers}->{"GUID"} = sprintf("%08x", $self->ReadLongGUID()) . "-" . sprintf("%08x", $self->ReadLongGUID()) . "-" . sprintf("%08x",$self->ReadLongGUID()) . "-" . sprintf("%08x", $self->ReadLongGUID());
   }
 }
 
@@ -261,6 +284,166 @@ sub getImportNames {
     }
     $self->{'imports'}->[$i]->{"_Name"} = $self->getName($self->{'imports'}->[$i]->{"Name"});
   }
+}
+
+sub getModel {
+  my $self = shift;
+  my $id = shift;
+  
+  # Object format:
+  #
+  # objectproperties
+  # 54 bytes - no idea
+  # index - export property polys
+  # 14 bytes - no idea
+  
+  my $offset = $self->{'exports'}->[$id]->{"offset"};
+  
+  $self->{'debuglog'} .= "Get model $id at $offset\n";
+  # warn("Get object $id at $offset\n");
+  
+  my %objects = $self->getObject($id);
+  
+  my $size = $self->{'exports'}->[$id]->{'Size'};
+  if (($size != 70) and ($size != 71) and ($size != 72) and ($size != 86) and ($size != 87) and ($size != 88)) {
+     $self->{'debuglog'} .= "Model ($id) has unknown size (" . $self->{'exports'}->[$id]->{"size"} . "\n";
+     warn("Model ($id): has unknown size (" . $self->{'exports'}->[$id]->{"size"} . "\n");
+  }
+  
+  seek($self->{'fh'}, 54, 1);
+  
+  return $self->ReadIndex();
+ 
+#   my $size = $self->{'exports'}->[$id]->{'Size'};
+# 
+#   seek($self->{'fh'}, $offset, 0);
+#   my $byte = $self->ReadByte();
+#   
+#   print "Get model $id at $offset\n";
+#   print "$byte => $size\n";
+#   
+#   if (($size == 70) or ($size == 71) or $size == 72) {
+#     $offset += 55;
+#   }
+#   elsif (($size == 86) or ($size == 87) or ($size == 88)) {
+#     $offset += 70;
+#   }
+#   else {
+#     $self->{'debuglog'} .= "Can't get model ($id): unknown size (" . $self->{'exports'}->[$id]->{"size"} . "\n";
+#     warn("Can't get model ($id): unknown size (" . $self->{'exports'}->[$id]->{"size"} . "\n");
+#     return;
+#   }
+# 
+#   seek($self->{'fh'}, $offset, 0);
+ 
+  
+#   print $self->ReadByte() . "\n";
+#   
+#   print "Coord1:\n";
+#   print $self->ReadFloat() . "\n";
+#   print $self->ReadFloat() . "\n";
+#   print $self->ReadFloat() . "\n";
+# 
+#   print "Coord2:\n";
+#   print $self->ReadFloat() . "\n";
+#   print $self->ReadFloat() . "\n";
+#   print $self->ReadFloat() . "\n";
+#   
+#   print "Index1:\n";
+#   print $self->ReadIndex() . "\n";
+#   
+#   print "Coord3:\n";
+#   print $self->ReadFloat() . "\n";
+#   print $self->ReadFloat() . "\n";
+#   print $self->ReadFloat() . "\n";
+#     
+#   print "Index2:\n";
+#   print $self->ReadIndex() . "\n";
+#   
+#   print "Index3:\n";
+#   print $self->ReadIndex() . "\n";
+#   
+#   return;
+#   
+#   my $foo = $self->ReadByte();
+#   
+#   my $modelsize = $self->ReadIndex();
+#   foreach (0 .. ($size - 1)) {
+#     # vector
+#     $self->ReadFloat();
+#     $self->ReadFloat();
+#     $self->ReadFloat();
+#   }
+#   
+#   $size = $self->ReadIndex();
+#   foreach (0 .. ($size - 1)) {
+#     # vector
+#     $self->ReadFloat();
+#     $self->ReadFloat();
+#     $self->ReadFloat();
+#   }
+#   
+#   $size = $self->ReadIndex();
+#   foreach (0 .. ($size - 1)) {
+#     # bspnode
+#     $self->ReadFloat();
+#     $self->ReadFloat();
+#     $self->ReadFloat();
+#     $self->ReadFloat();
+#     $self->ReadQWord();
+#     $self->ReadByte();
+#     $self->ReadIndex();
+#     $self->ReadIndex();
+#     $self->ReadIndex();
+#     $self->ReadIndex();
+#     $self->ReadIndex();
+#     $self->ReadIndex();
+#     $self->ReadIndex();
+#     $self->ReadByte();
+#     $self->ReadByte();
+#     $self->ReadByte();
+#     $self->ReadDWord();
+#     $self->ReadDWord();
+#   }
+#   
+#   $size = $self->ReadIndex();
+#   foreach (0 .. ($size - 1)) {
+#     # bspsurf
+#     $self->ReadIndex();
+#     $self->ReadDword();
+#     $self->ReadIndex();
+#     $self->ReadIndex();
+#     $self->ReadIndex();
+#     $self->ReadIndex();
+#     $self->ReadIndex();
+#     $self->ReadIndex();
+#     $self->ReadWord();
+#     $self->ReadWord();
+#     $self->ReadIndex();
+#   }
+#   
+#   $size = $self->ReadIndex();
+#   foreach (0 .. ($size - 1)) {
+#     # fvert
+#     $self->ReadLong();
+#   }
+#   
+#   $self->ReadLong();
+#   $size = $self->ReadLong();
+#   
+#   foreach (0 .. ($size - 1)) {
+#     # zone
+#     $self->ReadIndex();
+#     $self->ReadQWord();
+#     $self->ReadQWord();
+#   }
+#   
+#  
+#   my $polys = $self->ReadIndex();
+#   
+#   print $polys . "\n";
+#   
+#   return $polys;
 }
 
 sub getName {
@@ -352,6 +535,21 @@ sub getTexture {
   my $self = shift;
   my $id = shift; #id in export table
   
+  # object format:
+  #
+  # objectproperties
+  # byte - MipMapCount
+  # each MipMapCount
+  #  if (Version >= 63)
+  #    DWORD - WidthOffset
+  #  index - MipMapSize
+  #  each MipMapSize
+  #    byte - MipMapValue
+  #  DWORD - width
+  #  DWORD - height
+  #  BYTE - bitswidth
+  #  BYTE - bitsheight
+  
   my %object = $self->getObject($id);
   
   $object{'mipmapcount'}->{value} = $self->ReadByte();
@@ -378,6 +576,16 @@ sub getTexture {
 sub getPalette {
   my $self = shift;
   my $id = shift;
+
+  # object format:
+  #
+  # objectproperties
+  # index - PaletteSize
+  # each PalletteSize
+  #   BYTE - Red
+  #   BYTE - Green
+  #   BYTE - Blue
+  #   BYTE - Alpha
   
   my %object = $self->getObject($id);
   
@@ -409,6 +617,121 @@ sub getPackage {
 sub getMesh {
   my $self = shift;
   my $id = shift;
+  
+  # Object format
+  #
+  # objectproperties
+  # boundingbox - Primitive.Boundingbox
+  # boundingsphere - Primitive.BoundingSphere
+  # if (version >61)
+  #   long - Verts_Jump
+  # index - Verts_Count
+  # each Verts_Count
+  #   long - XYZ
+  # if (version > 61)
+  #   long - Tris_Jump
+  # index - Tris_Count
+  # each Tris_Count
+  #   short - VertexIndex1
+  #   short - VertexIndex2
+  #   short - VertexIndex3
+  #   byte - VertexIndex1_U
+  #   byte - VertexIndex1_V
+  #   byte - VertexIndex2_U
+  #   byte - VertexIndex2_V
+  #   byte - VertexIndex3_U
+  #   byte - VertexIndex3_V
+  #   long - Flags --> described but not implemented
+  #   long - TextureIndex --> described but not implemented
+  # index - AnimSeqs_Count
+  # each AbumSeqs_Count
+  #   index - Name
+  #   index - Group
+  #   long - Start_Frame
+  #   long - Num_Frames
+  #   index - Function_Count
+  #   each Function_Count
+  #     long - Time
+  #     index - Function
+  #   float - Rate
+  # long - Connects_jump
+  # index - Connects_count
+  # each Connects_count
+  #   long - NumVerTriangles
+  #   long - TriangleListOfset
+  # boundingbox - BoundingBox
+  # boundingsphere - BoundingSphere
+  # long - VertLinks_Jump
+  # index - VertLinks_Count
+  # each VertLinks_Count
+  #   long - VertLink
+  # index - Texture_Count
+  # each Texture_Count
+  #   index Texture
+  # index BoundingBoxes_Count
+  # each BoundingBoxes_Count
+  #   boundingbox - BoundingBoxes
+  # index BoundingSpheres_Count
+  # each BoundingSpheres_Count
+  #   boundingsphre - BoundingSpheres
+  # long - FrameVerts
+  # long - AnimVerts
+  # long - ANDFlags
+  # long - ORFlags
+  # vector - Scale
+  # vector - Origin
+  # rotator - RotOrigin
+  # long - CurPoly
+  # long - CurVertex
+  # if version == 65
+  #   float - TextureLOD?
+  # if version > 65
+  #   index - Texture_LOD_Count
+  #   each Texture_LOD_Count
+  #     float - TextureLOD
+  # if TrisCount == 0 <-- LOD Mesh
+  #   index - CollapsePointThus_Count
+  #   each CollapsePointThus_Count
+  #     short - CollapsePointThus
+  #   index - FaceLevel_Count
+  #   each FaceLevel_Count
+  #     short - FaceLevel
+  #   index - Faces_Count
+  #   each Faces_Count
+  #     short - WedgeIndex1
+  #     short - WedgeIndex2
+  #     short - WedgeIndex3
+  #     short - MaterialIndex_
+  #   index - CollapseWedgeThus_Count
+  #   each CollapseWedgeThus_Count
+  #     word CollapseWedgeThus
+  #   index Wedges_Count
+  #   each Wedges_Count
+  #     short - VertexIndex
+  #     byte - S
+  #     byte - T
+  #   index Materials_Count
+  #   each Materials_Count
+  #     long - Flags
+  #     long - TextureIndex
+  #   index SpecialFaces_Count
+  #   each SpecialFaces_Count
+  #     short SpecialWedgeIndex1
+  #     short SpecialWedgeIndex2
+  #     short SpecialWedgeIndex3
+  #     short SpecialMaterialIndex4
+  #   long - ModelVerts
+  #   long - SpecialVerts
+  #   float - MeshScaleMax
+  #   float - LODHysterisis
+  #   float - LODStrength
+  #   long - LoDMinVerts
+  #   float - LODMorph
+  #   float LODZDisplace
+  #   index ReMapAnimVerts_Count
+  #   each ReMapAnimVerts_Count
+  #     short ReMapAnimVerts
+  #   long - OldFrameVerts
   
   $self->{'debuglog'} .= "Execute getMesh($id)\n";
   
@@ -651,6 +974,90 @@ sub getMesh {
   
   return %object;
   
+}
+
+sub getPolys {
+  my $self = shift;
+  my $id = shift;
+  
+  # Object format:
+  #
+  # objectproperties
+  # long - numPolys
+  # long - arrayLength
+  # each arrayLength
+  #   index - numcoords
+  #   float - base_x
+  #   float - base_y
+  #   float - base_z
+  #   float - normal_x
+  #   float - normal_y
+  #   float - normal_z
+  #   float - texu_x
+  #   float - texu_y
+  #   float - texu_z
+  #   float - texv_x
+  #   float - texv_y
+  #   float - texv_z
+  #   each numcoords
+  #     float x
+  #     float y
+  #     float z
+  #   long - polyflags
+  #   index - actor
+  #   index - texture
+  #   index - itemname
+  #   index - ilink
+  #   index - ibrushpoly
+  #   short - panu
+  #   short - panv
+    
+  my %object = $self->getObject($id);
+  
+  my $numPolys = $self->ReadLong();
+  my $arrayLength = $self->ReadLong();
+    
+  my @polys;
+  
+  foreach my $poly (0 .. ($arrayLength-1)) {
+    my $numCoords = $self->ReadIndex();
+    
+    my $base_x = $self->ReadFloat();
+    my $base_y = $self->ReadFloat();
+    my $base_z = $self->ReadFloat();
+    
+    my $normal_x = $self->ReadFloat();
+    my $normal_y = $self->ReadFloat();
+    my $normal_z = $self->ReadFloat();  
+    
+    my $texu_x = $self->ReadFloat();
+    my $texu_y = $self->ReadFloat();
+    my $texu_z = $self->ReadFloat();
+        
+    my $texv_x = $self->ReadFloat();
+    my $texv_y = $self->ReadFloat();
+    my $texv_z = $self->ReadFloat();
+    
+    my @coords;
+
+    foreach (0 .. ($numCoords-1)) {
+      $coords[$_][0] = $self->ReadFloat();
+      $coords[$_][1] = $self->ReadFloat();
+      $coords[$_][2] = $self->ReadFloat();
+    }
+    push(@polys, \@coords);
+        
+    my $polyflags = $self->ReadLong();
+    my $actor = $self->ReadIndex();
+    my $texture = $self->ReadIndex();
+    my $itemName = $self->ReadIndex();
+    my $iLink = $self->ReadIndex();
+    my $iBrushPoly = $self->ReadIndex();
+    my $panu = $self->ReadShort();
+    my $panv = $self->ReadShort();
+  }
+  
+  return @polys;
 }
 
 sub ReadRotator {
@@ -1052,6 +1459,29 @@ sub ReadVector {
   return "(X=$x; Y=$y; Z=$z)";
 }
 
+#----------------------------------------#
+# no idea what this is doing in here     #
+#----------------------------------------#
+
+sub extractSound {
+  my $self = shift;
+  my $item = shift;
+  my $aref = $self->{'exports'}->[$item];
+  my $offset = $aref->{offset};
+  my $size = $aref->{Size};
+
+  my @properties = getExportProperties();
+  my $SoundFormat = $self->ReadIndex();
+     $SoundFormat = $self->ReadIndex();
+     $SoundFormat = $self->ReadIndex();
+#   print "Format: " . $self->getName($SoundFormat) . "\n";
+  my $OffsetNext = $self->ReadLong();
+  my $SoundSize = $self->ReadIndex();
+  my $SoundData;
+  read($self->{'fh'}, $SoundData, $SoundSize);
+#   print $SoundData;
+}
+
 =head1 NAME
 
 upkg - extract information from Unreal Tournament packages
@@ -1093,6 +1523,21 @@ getDependencies() - Returns an array with the dependencies of a package. If the
 file type could be determined the correct extension is used, otherwise .uxx is
 used.
 
+=head2 Brushes
+
+Brushes contain the geometry of Unreal Tournament maps. Actually the brush
+itself contains the brush properties only. The property 'Brush' is an object
+reference to a Model object. The model in its turnholds an object reference to a
+Polys object which contains the actual geometry of the brush.
+
+getBrush($objectid) - Returns the brush object including raw information of the 
+Polys object.
+
+getModel($objectid) - Returns the Polys object reference. I do not exactly know
+how to retrieve this information, a workaround is used which may fail!
+
+getPolys($objectid) - Returns an array with each of the polys coordinates:
+  ([x1,y1,z1],[x2,y2,z2],...)
 
 =head2 Textures
   
@@ -1110,6 +1555,12 @@ DEVELOPMENT - Development of this package was goal driven. Therefore methods
 usually don't return full information but only the required information. More
 and different features may be added in the future.
 
+MODELS - The method to extract the Polys object from a model uses a bypass and
+might not work all the time. The description of a model does not fit the data
+in a map. It currently jumps to the position the Polys object is expected, if
+any data is added before this it will likely fail (so always check if a Polys
+object is returned.
+  
 OTHER GAMES - Although the same game engine and package file format is used
 for multiple games upkg has not been made for or tested on packages other than
 for Unreal Tournament '99 (package version 68).
