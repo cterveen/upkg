@@ -469,6 +469,8 @@ sub getMesh {
     $object{'VertexI2_V_' . $_}->{'value'} = $self->ReadByte();
     $object{'VertexI3_U_' . $_}->{'value'} = $self->ReadByte();
     $object{'VertexI3_V_' . $_}->{'value'} = $self->ReadByte();
+    $object{'Flags_' . $_}->{'value'} = $self->ReadLong();
+    $object{'TextureIndex_' . $_}->{'value'} = $self->ReadLong();
   }
   
   $self->{'debuglog'} .= "   Get Anims\n";
