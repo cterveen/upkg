@@ -42,6 +42,21 @@ getDependencies() - Returns an array with the dependencies of a package. If the
 file type could be determined the correct extension is used, otherwise .uxx is
 used.
 
+Brushes
+
+Brushes contain the geometry of Unreal Tournament maps. Actually the brush
+itself contains the brush properties only. The property 'Brush' is an object
+reference to a Model object. The model in its turnholds an object reference to a
+Polys object which contains the actual geometry of the brush.
+
+getBrush($objectid) - Returns the brush object including raw information of the 
+Polys object.
+
+getModel($objectid) - Returns the Polys object reference. I do not exactly know
+how to retrieve this information, a workaround is used which may fail!
+
+getPolys($objectid) - Returns an array with each of the polys coordinates:
+  ([x1,y1,z1],[x2,y2,z2],...)
 
 Textures
   
@@ -59,6 +74,12 @@ DEVELOPMENT - Development of this package was goal driven. Therefore methods
 usually don't return full information but only the required information. More
 and different features may be added in the future.
 
+MODELS - The method to extract the Polys object from a model uses a bypass and
+might not work all the time. The description of a model does not fit the data
+in a map. It currently jumps to the position the Polys object is expected, if
+any data is added before this it will likely fail (so always check if a Polys
+object is returned.
+  
 OTHER GAMES - Although the same game engine and package file format is used
 for multiple games upkg has not been made for or tested on packages other than
 for Unreal Tournament '99 (package version 68).
