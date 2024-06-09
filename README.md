@@ -25,6 +25,8 @@ Save the file in any Perl module directory.
 
 See also the POD documentation.
 
+## Credits
+
 Thanks to Just**Me at the [Beyond Unreal](https://www.beyondunreal.com/) Forums for getting me on the way and providing an example script.  
 
 Technical details
