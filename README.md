@@ -6,13 +6,13 @@ upkg
 
 upkg is a Perl module to extract information from Unreal Tournament (UT99) packages. It was derived from [utdep.pl](https://github.com/cterveen/utdep.pl) to make it easier to extract information by perl scripts. Methods for the extraction of some data types have been included.
 
-The package can be considered alfa. Not all data types are supported and more methods for extracting and parsing other data types can be added. POD documentation is available. The module is not on CPAN.
+The package can be considered alfa. It has been used in various projects but support for datatypes has been added when needed and quite some data types are missing. POD documentation is available. The module is not on CPAN.
 
-The module has been used in various projects. No further development is intended.
+No further development is intended.
 
 ## Installation
 
-Save the file in any Perl module directory.
+Save upkg.pm in any Perl module directory.
 
 ## Use
 
@@ -26,6 +26,8 @@ Save the file in any Perl module directory.
 See also the POD documentation.
 
 ## Credits
+
+Package written by Christiaan ter Veen <https://www.rork.nl/>
 
 Thanks to Just**Me at the [Beyond Unreal](https://www.beyondunreal.com/) Forums for getting me on the way and providing an example script.
 
