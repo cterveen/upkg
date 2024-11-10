@@ -39,4 +39,4 @@ Technical details
 
 ## Copyright
 
-To be decided, but consider it free to use, modify and distribute.
+MIT License
